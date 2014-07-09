@@ -1,0 +1,50 @@
+<?php
+$cookie_file = tempnam('/temp','cookie');
+$ch= curl_init();
+curl_setopt($ch, CURLOPT_URL,'http://www.idtag.cn/index.html');
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_setopt ($ch, CURLOPT_REFERER, "http://www.idtag.cn/user/mycenter.html?m=mycenter");
+curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+curl_exec($ch);
+curl_close($ch);
+var_dump(file_get_contents($cookie_file));
+unlink($cookie_file);
+exit;
+$url = "http://login.idtag.cn/clogin.html";
+$logData['username'] = '13696545523';
+$logData['password'] = 'nn2006313';
+$logData['b'] = 'http://www.idtag.cn/user/loginandout.html?m=loginafter';
+$logData['v'] = 'B23CEFBB8AF49E044097529BBE508057';
+$logData['ic'] = 'v4s_idtag_cn';
+//$cookie_file = tempnam('/temp','cookie');
+$ch= curl_init();
+curl_setopt($ch, CURLOPT_URL,$url);
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $logData);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION,1);
+curl_setopt($ch, CURLOPT_USERAGENT,"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11");
+//curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-FORWARDED-FOR:114.97.27.120', 'CLIENT-IP:114.97.27.120'));
+//curl_setopt($ch, CURLOPT_PROXY, "http://112.217.228.212:8080");
+curl_setopt ($ch, CURLOPT_REFERER, "http://www.idtag.cn/index.html");
+curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+$info = curl_exec($ch);
+echo $info;
+curl_close($ch);
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,'http://www.idtag.cn/user/mycenter.html?m=mycenter');
+curl_setopt($ch, CURLOPT_HEADER, 0);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+//curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-FORWARDED-FOR:114.97.27.120', 'CLIENT-IP:114.97.27.120'));
+curl_setopt($ch, CURLOPT_USERAGENT,"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11");
+//curl_setopt($ch, CURLOPT_PROXY, "http://112.217.228.212:8080");
+curl_setopt ($ch, CURLOPT_REFERER, "http://www.idtag.cn/index.html");
+curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+$contents = curl_exec($ch);
+curl_close($ch);
+echo $contents;
+
+unlink($cookie_file);
+?>
