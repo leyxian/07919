@@ -38,7 +38,7 @@ register_shutdown_function(array($_MooClass['MooMySQL'],'close'));
 
 //允许的方法
 $names = array('login', 'index', 'register', 'lostpasswd', 'inputpwd','myaccount', 'viewspace', 'relatekw', 'ajax', 'seccode', 'sendmail', 'material', 'search', 'service', 'payment','safetyguide','lovestyle','loveing','story', 'about','return','invite','vote','profile','recommend', 'crontab', 'pop','clinic','space','hnintro','paymenttest','cooperation','video','activity','chat',
-    'andriod','test','lovestation','spread', 'confession', 'flowershop', 'play', 'company'
+    'andriod','test','lovestation','spread', 'confession', 'flowershop', 'play', 'company', 
 );
 
 //获取推广参数
