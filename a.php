@@ -112,7 +112,7 @@ $mf = new MyFiles();
 <meta charset="UTF-8">
 <title>文件操作</title>
 <link rel="stylesheet" type="text/css" href="/public/default/css/global_import_new.css">
-<script type="text/javascript" src="http://lib.sinaapp.com/js/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="public/system/js/jquery-1.7.2.min.js"></script>
 <style type="text/css">
 #files ul {padding: 10px;border: 1px solid #d73c90;font-size: 16px;float: left;}
 #files ul li {margin: 5px;color:#33bdef;}
@@ -123,7 +123,7 @@ $mf = new MyFiles();
 <form action="/a.php?f=format" method="post">
 <div id="files"></div>
 </form>
-<script type="text/javascript">
+<script>
 $(function(){
 	$('form').submit(function(event) {
 		if(!$("input[name='files[]']:checked").val()){

@@ -1,11 +1,11 @@
-﻿<?php
-//error_reporting(0); 
+<?php
+error_reporting(E_ALL ^ E_NOTICE);
 ignore_user_abort(true); 
 set_time_limit(0); 
 ini_set('memory_limit','1024M'); 
 date_default_timezone_set('Asia/Shanghai'); 
-define("FROMEWORK",false); 
-require 'framwork/MooPHP.php'; 
+define("FROMEWORK",false);
+require 'framwork/MooPHP.php';
 require 'MyCollection.class.php'; 
 require 'framwork/libraries/ImageCrop.class.php'; 
 require 'config_list2.php'; 
@@ -45,20 +45,23 @@ class DataAcquisition {
     public $_mc =''; 
     function __construct(){ 
         global $proxyIp; 
-        $this->_cookie_file = tempnam('/temp','cookie'); 
+        $this->_cookie_file = tempnam(dirname(__file__).'/data/temp','cookie');
         $mc = new MyCollection($this->_cookie_file,$proxyIp,array('X-FORWARDED-FOR:8.8.8.81', 'CLIENT-IP:8.8.8.82')); $this->_mc = $mc; unset($proxyIp); 
     } 
+    function index(){
+
+    }
     function mySelect(){ global $_MooClass,$dbTablePre; $sql = "select count(*) as c,province,city from {$dbTablePre}members_search where usertype=1 and gender=1 and province>0 and city>0 group by province,city having c>0 order by city asc"; $wms = $_MooClass['MooMySQL']->getAll($sql); if($wms) while (list($k,$v) = each($wms)) { $wms[$k][0] = $v['c']*2>600?600:$v['c']*2; unset($wms[$k]['c']); $sql = "select max(birthyear) as maxb from {$dbTablePre}members_search where usertype=1 and gender=1 and province = {$v['province']} and city = {$v['city']} and birthyear>1970"; $birth = $_MooClass['MooMySQL']->getOne($sql); $wms[$k]['maxAge'] = date('Y')-$birth['minb']; $wms[$k]['minAge'] = date('Y')-$birth['maxb']; } unset($_MooClass,$dbTablePre,$sql); return $wms; } function addOldMembers(){ global $collectList,$_MooClass,$dbTablePre; $no = mc_get(__class__.'_'.__function__); if(empty($no) && $no!== 0){ $no = 470; } while(!isset($collectList[$no]) ){ if($no<0){ ll(__function__,"please shutdown the script!"); exit; } $no--; } foreach ($collectList[$no] as $ke => $va) { run(__function__); $a = explode(',', $ke); $gender = array(0,1); foreach($gender as $val){ $num = $_MooClass['MooMySQL']->getOne("select count(*) as c,gender from {$dbTablePre}members_search where province = {$a[0]} ".($a[1]>0?" and city = {$a[1]}":'')." and gender = {$val} and birthyear<=".(date('Y')-($val==1?28:30))." and birthyear>=".(date('Y')-($val==1?40:42))); $num = 30 -$num['c']; if($num<=0) continue; $caiji[$ke][$val] = array('minAge'=>$val==1?28:30,'maxAge'=>$val==1?40:42,'num'=>$num); } } mc_set(__class__.'_'.__function__,--$no); unset($collectList,$_MooClass,$dbTablePre); $urls = $this->getListUrl($caiji);unset($caiji); if($urls); foreach($urls as $v){ run(__function__); $url = $this->getPageUrl($v); if(empty($url)) {ll(__function__,$v.'[false],');continue;} $this->webLogin(); foreach($url as $va){ run(__function__); if(dbHas('members_base',array('source'=>trim($va['url']) ) ) ) { ll(__function__,$va['url'].'[has],'); } $data = $this->getData($va['url'],$va['info']); if(empty($data)) {ll(__function__,$va['url'].'[false],');continue;} $uid = $this->formatData($data,'members_search'); ll(__function__,$uid.','); } }unset($urls); } 
 	function getPcMembers(){ 
-        $caiji['10116000,10116009'] = array(0 => array('minAge'=>19, 'maxAge'=>25, 'num'=>60));
+        $caiji['10119000,10119001'] = array(0 => array('minAge'=>31, 'maxAge'=>45, 'num'=>60));
         $urls = $this->getListUrl($caiji);unset($caiji);
-        foreach($urls as $v){ 
+        foreach($urls as $v){
             run(__function__);
             $url = $this->getPageUrl($v);
             if(empty($url)) {
                 ll(__function__,$v.'[false],');continue;
-            } 
-            $this->webLogin(); 
+            }
+            $this->webLogin();
             foreach($url as $va){ 
                 run(__function__); 
                 if(dbHas('members_base',array('source'=>trim($va['url']) ) ) ) { 
@@ -429,7 +432,20 @@ class DataAcquisition {
     function webLogin($arg='zha'){ 
         switch ($arg) { 
             case 'zha': 
-                $loginInfo['url'] = 'http://profile.zhenai.com/login/loginactionindex.jsps'; $loginInfo['peferer'] = 'http://profile.zhenai.com/'; $loginInfo['loginData']['loginInfo'] = '13696545523'; $loginInfo['loginData']['password'] = '120120'; $loginInfo['loginData']['loginmode'] = 2; $loginInfo['loginData']['rememberpassword'] = 1; 
+                $loginInfo['url'] = 'http://profile.zhenai.com/login/loginactionindex.jsps'; 
+                $loginInfo['peferer'] = 'http://profile.zhenai.com/'; 
+                $loginInfo['loginData']['loginInfo'] = '13696545523'; 
+                $loginInfo['loginData']['formHuntWedding'] = ''; 
+                $loginInfo['loginData']['fromurl'] = ''; 
+                $loginInfo['loginData']['whichTV'] = ''; 
+                $loginInfo['loginData']['fid'] = ''; 
+                $loginInfo['loginData']['mid'] = ''; 
+                $loginInfo['loginData']['redirectUrl'] = '';
+                $loginInfo['loginData']['isTpRedirect'] = '';
+                $loginInfo['loginData']['password'] = '120120'; 
+                $loginInfo['loginData']['loginmode'] = 2; 
+                $loginInfo['loginData']['whereLogin'] = 'login_page'; 
+                $loginInfo['loginData']['rememberpassword'] = 1; 
                 break; 
             case 'jia': $loginInfo['url'] = 'http://login.jiayuan.com/dologin.php'; $loginInfo['peferer'] = 'http://login.jiayuan.com/'; $loginInfo['loginData']['name'] = '13696545523@qq.com'; $loginInfo['loginData']['password'] = 'nn2006313'; $loginInfo['loginData']['ljg_login'] = 1; $loginInfo['loginData']['channel'] = 0; $loginInfo['loginData']['position'] = 0;  
                 break;
@@ -576,7 +592,7 @@ class DataAcquisition {
             $c = 0; 
             while(empty($contents)){ 
                 if($c>2) { ll('aataacquisition',$url."[read false]\r\n");break; } 
-                $contents = $this->_mc->webVisit(array('url'=>$url,'peferer'=>'http://www.youyuan.com')); $c++; 
+                $contents = $this->_mc->webVisit(array('url'=>$url)); $c++; 
             }unset($c); 
             if(empty($contents)) return null;
             $data['nickname2'] = '';
@@ -585,11 +601,53 @@ class DataAcquisition {
                 case 'zha': 
                     $contents = iconv('GBK', 'utf-8', $contents); 
                     if(empty($info)) {ll('aataacquisition',$url."[no info]\r\n");return null;} 
-                    $gender = $info['gender']; 
+                    $gender = $info['gender'];
                     preg_match('/objDefalutPhoto(.*)/',$contents,$str);
                     if(isset($str[0])) preg_match('/http:\/\/photo[0-9]+\.zastatic\.com(.*)(jpg|gif|png|jpeg|JPG|GIF|PNG|JPEG)/',$str[0],$str);
-                    if(isset($str[0])) $str[0] = str_replace('_3', '_2', $str[0]); if(empty($str[0]) || !@exif_imagetype($str[0])) {ll('aataacquisition',$url."[no mainimg]\r\n");return null;} $mbData['mainimg'] = $str[0]; preg_match('/职业：<\/strong>\S+/', $contents,$str); $data['occupation'] = getOccupation($str[0],$occupationList); preg_match('/公司：<\/strong>\S+/', $contents,$str); $data['corptype'] =getCorptype($str[0],$corptypeList); preg_match('/是否购车：<\/strong>\S+/', $contents,$str); $data['vehicle'] = getVeicle($str[0],$vehicleList); preg_match('/信仰：<\/strong>\S+/', $contents,$str); $data['religion'] = getReligion($str[0],$religionList); preg_match('/兄弟姐妹：<\/strong>\S+/', $contents,$str); $data['family'] = getFamily($str[0], $familyList); preg_match('/是否吸烟：<\/strong>\S+/', $contents,$str); $data['smoking'] = getSmoking($str[0],$smokingList); preg_match('/是否喝酒：<\/strong>\S+/', $contents,$str); $data['drinking'] = getDrinking($str[0],$drinkingList); preg_match('/是否想要孩子：<\/strong>\S+/', $contents,$str); $data['wantchildren'] = getWantchildren($str[0],$wantchildrenList); preg_match('/<li[^>]+main[^>]+><h1><strong>[^>]+/',$contents,$str); preg_match('/<strong>(.*)<\//',$str[0],$str); $data['nickname'] = $str[1]; if(preg_match('/会员[0-9]+/',$data['nickname'])){ $data['nickname'] = $this->getNickname($gender); } $data['username'] = getUsername(); $data['telphone'] = 0; $data['password'] = md5('qingyuan07919'); $data['truename'] = ''; $data['gender'] = $gender; preg_match('/<strong[^>]+>(\d+)岁/',$contents,$str); if(is_numeric($str[1]) && $str[1]>0){ $data['birthyear'] = date('Y',strtotime('-'.$str[1].'year')); } preg_match('/住在<strong[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $data['province'] = getProviceNo($pc['provice']); $data['city'] = getCityNo($pc['city']); if(empty($data['province'])) { ll('aataacquisition',$url."[province error]\r\n"); return null; } if(empty($data['city']) && !in_array($data['province'],array('10102000','10103000','10104000','10105000'))) { ll('aataacquisition',$url."[city error]\r\n"); return null; } preg_match('/，<strong[^>]+>(.*)<\/strong>(.*)，住在/',$contents,$str); $data['marriage'] = getMarriage($str[1],$marriageList); preg_match('/，<strong[^>]+>(\S+)<\/strong>，月收入/',$contents,$str); $data['education'] = getEducation($str[1],$educationList); preg_match('/月收入<strong[^>]+>(\S+)元/',$contents,$str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = $temp[1]>0?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $data['salary'] = getSalary($num,$salaryList); preg_match('/元<\/strong>，(\S+)，/',$contents,$str); $data['house'] = getHouse($str[1],$houseList); preg_match('/，<strong[^>]+>(.*)<\/strong>，(.*)，住在/', $contents, $str); if(isset($str[2])) $data['children'] = getChildren($str[2],$childrenList); preg_match('/(\d+)厘米<\/s/', $contents,$str); $data['height'] = is_numeric($str[1])?$str[1]:0; preg_match('/体重：<\/strong><\/dt><dd>(\d+)/', $contents,$str); $data['weight'] = isset($str[1])?(int)$str[1]:0; preg_match('/体型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['body'] = getBody($str[1],$bodyList); preg_match('/生肖：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['animalyear'] = getAnimailyear($str[1],$animalyearList); $con_key = array_keys($constellationList); preg_match('/星座：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); foreach($constellationList as $key=>$val){ if(strpos($str[1], $key)!==false){ $data['constellation'] = array_search($key, $con_key) + 1; if($data['birthyear']){ $list = explode(',', $val); $mbData['birth'] = rand(strtotime($data['birthyear'].'-'.$list[1]),strtotime($data['birthyear'].'-'.$list[0]));unset($list); } } } preg_match('/血型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['bloodtype'] = getBloodtype($str[1],$bloodtypeList); preg_match('/籍贯：<\/strong><\/dt><dd[^>]+>([^<]+)/', $contents, $str); $pc = getProvinceCity($str[1],$provinceCityList); $data['hometownprovince'] = getProviceNo($pc['provice']); $data['hometowncity'] = getCityNo($pc['city']); $data['regdate'] = time(); $data['updatetime'] = time(); preg_match('/民族：<\/strong><\/dt><dd>([^<]+)/',$contents,$str); $data['nation'] = getStock($str[1],$stockList); $data['usertype'] = 3; $data['sid'] = 1; if(empty($data['province'])||empty($data['birthyear'])||!is_numeric($data['gender'])) { ll('aataacquisition',$url."[data error]\r\n"); return null; } $ip = getUserIp(); $mbData['source'] = $url; $mbData['regip'] = $ip; $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $mbData['friendprovince'] = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; preg_match('/喜欢的食物：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondfood'] = getFondfood($str[1], $fondfoodList); preg_match('/喜欢的地方：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondplace'] = getFondplace($str[1], $fondplaceList); preg_match('/喜欢的活动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondactivity'] = getFondactivity($str[1], $fondactivityList); preg_match('/喜欢的体育运动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondsport'] = getFondsport($str[1], $fondsportList); preg_match('/喜欢的音乐：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondmusic'] = getFondmusicList($str[1], $fondmusicList); preg_match('/喜欢的影视节目：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondprogram'] = getFondprogram($str[1], $fondprogramList); $mcData['gender'] = $gender==1?0:1; preg_match('/年龄：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['age1'] = isset($str[1])?(int)$str[1]:0; $mcData['age2'] = isset($str[2])?(int)$str[2]:0; preg_match('/身高：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['height1'] = isset($str[1])?(int)$str[1]:0; $mcData['height2'] = isset($str[2])?(int)$str[2]:0; preg_match('/体型：<\/dt><dd>([^<]+)/', $contents, $str); $mcData['body'] = getBody($str[1],$bodyList); $mcData['hasphoto']=1; preg_match('/婚姻状况：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['marriage'] = getMarriage($str[1],$marriageList); preg_match('/学历：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['education'] = getEducation($str[1],$educationList); preg_match('/工作地区：<\/dt><dd[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']); preg_match('/是否抽烟：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['smoking'] = getSmoking($str[1],$smokingList); preg_match('/是否喝酒：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['drinking'] = getDrinking($str[1],$drinkingList); preg_match('/是否想要孩子：<\/dt><dd>([^<]+)<\/dd><\/li>[^<]+<\/ul>/', $contents,$str); $mcData['wantchildren'] = getWantchildren($str[1],$wantchildrenList); preg_match('/月收入：<\/dt><dd>(\S+)元/', $contents, $str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = isset($temp[1])?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $mcData['salary'] = getSalary($num,$salaryList); preg_match('/职业：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['occupation'] = getOccupation($str[0],$occupationList); preg_match('/<li class="folded">([\s\S]*?)<\/li>/',$contents,$str); $miData['introduce'] = isset($str[1])?checkStr(strip_tags($str[1])) :''; $miData['introduce_pass'] = empty($miData['introduce'])?0:1; $miData['introduce_check'] = 1; $maData['real_lastvisit'] = time(); $maData['finally_ip'] = $ip; $mlData['lastip'] = $ip; $mlData['lastvisit'] = time(); $mlData['last_login_time'] = time(); $mlData['login_meb'] = 1; preg_match_all('/<li>\s*<p>\s*<img[^>]+>/',$contents,$str); if(!array_empty($str[0])){ $i=0; foreach($str[0] as $v2){ preg_match('/data-big-img="[^"]+"/',$v2,$str); preg_match('/http:\/\/.+\.(jpg|gif|png|jpeg|JPG|GIF|PNG|JPEG)/',$str[0],$str); if($str[0] && @exif_imagetype($str[0])){ $pData[] = $str[0]; }unset($v2); } } $cData['email'] = 'yes'; if(rand(0,9)>=5){ $cData['identity_check'] = 3; } $cData['telphone'] = '12345678900'; 
-                        break; 
+                    if(isset($str[0])) $str[0] = str_replace('_3', '_2', $str[0]); if(empty($str[0]) || !@exif_imagetype($str[0])) {ll('aataacquisition',$url."[no mainimg]\r\n");return null;} $mbData['mainimg'] = $str[0]; preg_match('/职业：<\/strong>\S+/', $contents,$str); $data['occupation'] = getOccupation($str[0],$occupationList); preg_match('/公司：<\/strong>\S+/', $contents,$str); $data['corptype'] =getCorptype($str[0],$corptypeList); preg_match('/是否购车：<\/strong>\S+/', $contents,$str); $data['vehicle'] = getVeicle($str[0],$vehicleList); preg_match('/信仰：<\/strong>\S+/', $contents,$str); $data['religion'] = getReligion($str[0],$religionList); preg_match('/兄弟姐妹：<\/strong>\S+/', $contents,$str); $data['family'] = getFamily($str[0], $familyList); preg_match('/是否吸烟：<\/strong>\S+/', $contents,$str); $data['smoking'] = getSmoking($str[0],$smokingList); preg_match('/是否喝酒：<\/strong>\S+/', $contents,$str); $data['drinking'] = getDrinking($str[0],$drinkingList); preg_match('/是否想要孩子：<\/strong>\S+/', $contents,$str); $data['wantchildren'] = getWantchildren($str[0],$wantchildrenList); preg_match('/<li[^>]+main[^>]+><h1><strong>[^>]+/',$contents,$str); preg_match('/<strong>(.*)<\//',$str[0],$str); $data['nickname'] = $str[1]; if(preg_match('/会员[0-9]+/',$data['nickname'])){ $data['nickname'] = $this->getNickname($gender); } $data['username'] = getUsername(); $data['telphone'] = 0; $data['password'] = md5('qingyuan07919'); $data['truename'] = ''; $data['gender'] = $gender; preg_match('/<strong[^>]+>(\d+)岁/',$contents,$str); if(is_numeric($str[1]) && $str[1]>0){ $data['birthyear'] = date('Y',strtotime('-'.$str[1].'year')); } preg_match('/住在<strong[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $data['province'] = getProviceNo($pc['provice']); $data['city'] = getCityNo($pc['city']); if(empty($data['province'])) { ll('aataacquisition',$url."[province error]\r\n"); return null; } if(empty($data['city']) && !in_array($data['province'],array('10102000','10103000','10104000','10105000'))) { ll('aataacquisition',$url."[city error]\r\n"); return null; } preg_match('/，<strong[^>]+>(.*)<\/strong>(.*)，住在/',$contents,$str); $data['marriage'] = getMarriage($str[1],$marriageList); preg_match('/，<strong[^>]+>(\S+)<\/strong>，月收入/',$contents,$str); $data['education'] = getEducation($str[1],$educationList); preg_match('/月收入<strong[^>]+>(\S+)元/',$contents,$str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = $temp[1]>0?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $data['salary'] = getSalary($num,$salaryList); preg_match('/元<\/strong>，(\S+)，/',$contents,$str); $data['house'] = getHouse($str[1],$houseList); preg_match('/，<strong[^>]+>(.*)<\/strong>，(.*)，住在/', $contents, $str); if(isset($str[2])) $data['children'] = getChildren($str[2],$childrenList); preg_match('/(\d+)厘米<\/s/', $contents,$str); $data['height'] = is_numeric($str[1])?$str[1]:0; preg_match('/体重：<\/strong><\/dt><dd>(\d+)/', $contents,$str); $data['weight'] = isset($str[1])?(int)$str[1]:0; preg_match('/体型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['body'] = getBody($str[1],$bodyList); preg_match('/生肖：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['animalyear'] = getAnimailyear($str[1],$animalyearList); $con_key = array_keys($constellationList); preg_match('/星座：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); foreach($constellationList as $key=>$val){ if(strpos($str[1], $key)!==false){ $data['constellation'] = array_search($key, $con_key) + 1; if($data['birthyear']){ $list = explode(',', $val); $mbData['birth'] = rand(strtotime($data['birthyear'].'-'.$list[1]),strtotime($data['birthyear'].'-'.$list[0]));unset($list); } } } preg_match('/血型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['bloodtype'] = getBloodtype($str[1],$bloodtypeList); preg_match('/籍贯：<\/strong><\/dt><dd[^>]+>([^<]+)/', $contents, $str); $pc = getProvinceCity($str[1],$provinceCityList); $data['hometownprovince'] = getProviceNo($pc['provice']); $data['hometowncity'] = getCityNo($pc['city']); $data['regdate'] = time(); $data['updatetime'] = time(); preg_match('/民族：<\/strong><\/dt><dd>([^<]+)/',$contents,$str); $data['nation'] = getStock($str[1],$stockList); $data['usertype'] = 3; $data['sid'] = 1; if(empty($data['province'])||empty($data['birthyear'])||!is_numeric($data['gender'])) { ll('aataacquisition',$url."[data error]\r\n"); return null; } $ip = getUserIp(); $mbData['source'] = $url; $mbData['regip'] = $ip; $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $mbData['friendprovince'] = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; preg_match('/喜欢的食物：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondfood'] = getFondfood($str[1], $fondfoodList); preg_match('/喜欢的地方：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondplace'] = getFondplace($str[1], $fondplaceList); preg_match('/喜欢的活动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondactivity'] = getFondactivity($str[1], $fondactivityList); preg_match('/喜欢的体育运动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondsport'] = getFondsport($str[1], $fondsportList); preg_match('/喜欢的音乐：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondmusic'] = getFondmusicList($str[1], $fondmusicList); preg_match('/喜欢的影视节目：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondprogram'] = getFondprogram($str[1], $fondprogramList); $mcData['gender'] = $gender==1?0:1; preg_match('/年龄：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['age1'] = isset($str[1])?(int)$str[1]:0; $mcData['age2'] = isset($str[2])?(int)$str[2]:0; preg_match('/身高：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['height1'] = isset($str[1])?(int)$str[1]:0; $mcData['height2'] = isset($str[2])?(int)$str[2]:0; preg_match('/体型：<\/dt><dd>([^<]+)/', $contents, $str); $mcData['body'] = getBody($str[1],$bodyList); $mcData['hasphoto']=1; preg_match('/婚姻状况：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['marriage'] = getMarriage($str[1],$marriageList); preg_match('/学历：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['education'] = getEducation($str[1],$educationList); preg_match('/工作地区：<\/dt><dd[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']); preg_match('/是否抽烟：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['smoking'] = getSmoking($str[1],$smokingList); preg_match('/是否喝酒：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['drinking'] = getDrinking($str[1],$drinkingList); preg_match('/是否想要孩子：<\/dt><dd>([^<]+)<\/dd><\/li>[^<]+<\/ul>/', $contents,$str); $mcData['wantchildren'] = getWantchildren($str[1],$wantchildrenList); preg_match('/月收入：<\/dt><dd>(\S+)元/', $contents, $str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = isset($temp[1])?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $mcData['salary'] = getSalary($num,$salaryList); preg_match('/职业：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['occupation'] = getOccupation($str[0],$occupationList); preg_match('/<li class="folded">([\s\S]*?)<\/li>/',$contents,$str); $miData['introduce'] = isset($str[1])?checkStr(strip_tags($str[1])) :''; $miData['introduce_pass'] = empty($miData['introduce'])?0:1; $miData['introduce_check'] = 1; 
+                    $maData['finally_ip'] = $mbData['regip'];
+                    $maData['real_lastvisit'] = time(); 
+                    $maData['last_ip'] = $ip; 
+                    $maData['is_delete'] = 0; 
+                    $maData['recommend'] = 0; 
+                    $maData['dateline'] = 0; 
+                    $maData['allto_time'] = 0; 
+                    $maData['renewalstatus'] = 0; 
+                    $maData['memberprogress'] = 0; 
+                    $maData['mid'] = 0;
+                    $mlData['lastip'] = $ip; 
+                    $mlData['lastvisit'] = time(); 
+                    $mlData['last_login_time'] = time(); 
+                    $mlData['login_meb'] = 1; 
+                    preg_match_all('/<li>\s*<p>\s*<img[^>]+>/',$contents,$str); 
+                    if(!array_empty($str[0])){ 
+                        $i=0; 
+                        foreach($str[0] as $k2 => $v2){ 
+                            if($k2 > 19 ) break;
+                            preg_match('/data-big-img="[^"]+"/',$v2,$str); 
+                            preg_match('/http:\/\/.+\.(jpg|gif|png|jpeg|JPG|GIF|PNG|JPEG)/',$str[0],$str); 
+                            if($str[0] && @exif_imagetype($str[0])){ 
+                                $pData[] = $str[0]; 
+                            }unset($v2); 
+                        } 
+                    } 
+                    $cData['marriage'] = '';
+                    $cData['education'] = '';
+                    $cData['occupation'] = '';
+                    $cData['salary'] = '';
+                    $cData['house'] = '';
+                    $cData['video'] = '';
+                    $cData['toshoot_video_url'] = '';
+                    $cData['toshoot_voice_url'] = '';
+                    $cData['sms'] = 0;
+                    $cData['toshoot_video_check'] = 0;
+                    $cData['toshoot_video_time'] = 0;
+                    $cData['toshoot_voice_check'] = 0;
+                    $cData['toshoot_voice_time'] = 0;
+                    $cData['email'] = 'yes'; 
+                    if(rand(0,9)>=5){ $cData['identity_check'] = 3; } 
+                    $cData['telphone'] = '12345678900'; 
+                    break; 
                 case 'jia': 
                     $mbData['source'] = $url; 
                     preg_match_all('/<h2><a href="#detail"\s\w+[^<]+<\/a>([^<]+)<\/h2>/', $contents, $str); 
@@ -605,17 +663,49 @@ class DataAcquisition {
 
                     if(@exif_imagetype($str[2])){ $mbData['mainimg'] = $str[2]; } unset($pathParts); } 
                     if(empty($mbData['mainimg'])){ ll('aataacquisition',$url."[no mainimg]\r\n"); return null; } 
-                    $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $fp = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; $mbData['friendprovince'] = $fp;unset($fp); $mcData['gender'] = $data['gender']==1?0:1; preg_match('/[0-9]+-[0-9]+岁/', $info->matchCondition,$str); if($str[0]) preg_match_all('/[0-9]+/', $str[0], $str); if(!array_empty($str)){ $mcData['age1'] = $str[0][0]; $mcData['age2'] = $str[0][1]; } preg_match('/[0-9]+-[0-9]+cm/', $info->matchCondition,$str); if($str[0]) preg_match_all('/[0-9]+/', $str[0], $str); if(!array_empty($str)){ $mcData['height1'] = $str[0][0]; $mcData['height2'] = $str[0][1]; } $mcData['hasphoto']=1; $mcData['marriage'] = getMarriage($info->matchCondition,$marriageList); $mcData['education'] = getEducation($info->matchCondition,$educationList); $pc = getProvinceCity($info->matchCondition,$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']);unset($pc); $mcData['smoking'] = rand(1,10)>9?1:0; $mcData['drinking'] = rand(1,10)>9?1:0; $miData['introduce'] = checkStr($info->shortnote); $miData['introduce_check'] = 1; $miData['introduce_pass'] = 1; $maData['real_lastvisit'] = $_SERVER['REQUEST_TIME']; $maData['finally_ip'] = $mbData['regip']; $mlData['lastip'] = $ip; $mlData['lastvisit'] = time(); $mlData['last_login_time'] = time(); $mlData['login_meb'] = 1; 
+                    $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $fp = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; $mbData['friendprovince'] = $fp;unset($fp); $mcData['gender'] = $data['gender']==1?0:1; preg_match('/[0-9]+-[0-9]+岁/', $info->matchCondition,$str); if($str[0]) preg_match_all('/[0-9]+/', $str[0], $str); if(!array_empty($str)){ $mcData['age1'] = $str[0][0]; $mcData['age2'] = $str[0][1]; } preg_match('/[0-9]+-[0-9]+cm/', $info->matchCondition,$str); if($str[0]) preg_match_all('/[0-9]+/', $str[0], $str); if(!array_empty($str)){ $mcData['height1'] = $str[0][0]; $mcData['height2'] = $str[0][1]; } $mcData['hasphoto']=1; $mcData['marriage'] = getMarriage($info->matchCondition,$marriageList); $mcData['education'] = getEducation($info->matchCondition,$educationList); $pc = getProvinceCity($info->matchCondition,$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']);unset($pc); $mcData['smoking'] = rand(1,10)>9?1:0; $mcData['drinking'] = rand(1,10)>9?1:0; $miData['introduce'] = checkStr($info->shortnote); $miData['introduce_check'] = 1; $miData['introduce_pass'] = 1; 
+                    $maData['finally_ip'] = $mbData['regip'];
+                    $maData['real_lastvisit'] = time(); 
+                    $maData['last_ip'] = $ip; 
+                    $maData['is_delete'] = 0; 
+                    $maData['recommend'] = 0; 
+                    $maData['dateline'] = 0; 
+                    $maData['allto_time'] = 0; 
+                    $maData['renewalstatus'] = 0; 
+                    $maData['memberprogress'] = 0; 
+                    $maData['mid'] = 0;
+
+                    $mlData['lastip'] = $ip; 
+                    $mlData['lastvisit'] = time(); 
+                    $mlData['last_login_time'] = time(); 
+                    $mlData['login_meb'] = 1; 
                     preg_match_all('/<li>[^>]*<div class="img_box">[\s\S]*?<\/li>/', $contents,$str); 
                     $pData = array(); 
-                    if(!array_empty($str[0])) foreach ($str[0] as $k => $v) { 
-                        preg_match('/<img.*src=\"([^"]+)\"[^>]*>/', $v, $pics); 
-                        if(isset($pics[1])){ 
-                            $pathParts = pathinfo($pics[1]); $pathParts['filename'] = substr($pathParts['filename'], 0,-1).'o'; $pics[1] = $pathParts['dirname'].'/'.$pathParts['filename'].'.'.$pathParts['extension'];unset($pathParts); if(@exif_imagetype($pics[1])) $pData[] = $pics[1]; 
-                        }unset($pics); 
-                    } 
+                    if(!array_empty($str[0])) 
+                        foreach ($str[0] as $k => $v) { 
+                            if($k > 19) break;
+                            preg_match('/<img.*src=\"([^"]+)\"[^>]*>/', $v, $pics); 
+                            if(isset($pics[1])){ 
+                                $pathParts = pathinfo($pics[1]); $pathParts['filename'] = substr($pathParts['filename'], 0,-1).'o'; $pics[1] = $pathParts['dirname'].'/'.$pathParts['filename'].'.'.$pathParts['extension'];unset($pathParts); if(@exif_imagetype($pics[1])) $pData[] = $pics[1]; 
+                            }unset($pics); 
+                        } 
                     if(array_empty($pData)){ ll('aataacquisition',$url."[no pics]\r\n"); return null; } 
-                    $cData['email'] = 'yes'; if(rand(0,9)>=5){ $cData['identity_check'] = 3; } $cData['telphone'] = '12345678900'; 
+                    $cData['marriage'] = '';
+                    $cData['education'] = '';
+                    $cData['occupation'] = '';
+                    $cData['salary'] = '';
+                    $cData['house'] = '';
+                    $cData['video'] = '';
+                    $cData['toshoot_video_url'] = '';
+                    $cData['toshoot_voice_url'] = '';
+                    $cData['sms'] = 0;
+                    $cData['toshoot_video_check'] = 0;
+                    $cData['toshoot_video_time'] = 0;
+                    $cData['toshoot_voice_check'] = 0;
+                    $cData['toshoot_voice_time'] = 0;
+                    $cData['email'] = 'yes'; 
+                    if(rand(0,9)>=5){ $cData['identity_check'] = 3; } 
+                    $cData['telphone'] = '12345678900';
                     break;
                 case 'yy': exit();
                     preg_match('/<div[^>]+class="user_list"><dl><dt>(.*?)<\/dt><dd>(.*?)<\/dd>/', $contents, $str);
@@ -641,7 +731,22 @@ class DataAcquisition {
                     $mbData['mainimg'] = $str[1];
                     preg_match('/<label>职业：<\/label>([^<]+)/', $contents,$str); 
                     $data['occupation'] = getOccupation($str[1],$occupationList);
-                    preg_match('/公司：<\/strong>\S+/', $contents,$str); $data['corptype'] =getCorptype($str[0],$corptypeList); preg_match('/是否购车：<\/strong>\S+/', $contents,$str); $data['vehicle'] = getVeicle($str[0],$vehicleList); preg_match('/信仰：<\/strong>\S+/', $contents,$str); $data['religion'] = getReligion($str[0],$religionList); preg_match('/兄弟姐妹：<\/strong>\S+/', $contents,$str); $data['family'] = getFamily($str[0], $familyList); preg_match('/是否吸烟：<\/strong>\S+/', $contents,$str); $data['smoking'] = getSmoking($str[0],$smokingList); preg_match('/是否喝酒：<\/strong>\S+/', $contents,$str); $data['drinking'] = getDrinking($str[0],$drinkingList); preg_match('/是否想要孩子：<\/strong>\S+/', $contents,$str); $data['wantchildren'] = getWantchildren($str[0],$wantchildrenList); preg_match('/<li[^>]+main[^>]+><h1><strong>[^>]+/',$contents,$str); preg_match('/<strong>(.*)<\//',$str[0],$str); $data['nickname'] = $str[1]; if(preg_match('/会员[0-9]+/',$data['nickname'])){ $data['nickname'] = $this->getNickname($gender); } $data['username'] = getUsername(); $data['telphone'] = 0; $data['password'] = md5('qingyuan07919'); $data['truename'] = ''; $data['gender'] = $gender; preg_match('/<strong[^>]+>(\d+)岁/',$contents,$str); if(is_numeric($str[1]) && $str[1]>0){ $data['birthyear'] = date('Y',strtotime('-'.$str[1].'year')); } preg_match('/住在<strong[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $data['province'] = getProviceNo($pc['provice']); $data['city'] = getCityNo($pc['city']); if(empty($data['province'])) { ll('aataacquisition',$url."[province error]\r\n"); return null; } if(empty($data['city']) && !in_array($data['province'],array('10102000','10103000','10104000','10105000'))) { ll('aataacquisition',$url."[city error]\r\n"); return null; } preg_match('/，<strong[^>]+>(.*)<\/strong>(.*)，住在/',$contents,$str); $data['marriage'] = getMarriage($str[1],$marriageList); preg_match('/，<strong[^>]+>(\S+)<\/strong>，月收入/',$contents,$str); $data['education'] = getEducation($str[1],$educationList); preg_match('/月收入<strong[^>]+>(\S+)元/',$contents,$str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = $temp[1]>0?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $data['salary'] = getSalary($num,$salaryList); preg_match('/元<\/strong>，(\S+)，/',$contents,$str); $data['house'] = getHouse($str[1],$houseList); preg_match('/，<strong[^>]+>(.*)<\/strong>，(.*)，住在/', $contents, $str); if(isset($str[2])) $data['children'] = getChildren($str[2],$childrenList); preg_match('/(\d+)厘米<\/s/', $contents,$str); $data['height'] = is_numeric($str[1])?$str[1]:0; preg_match('/体重：<\/strong><\/dt><dd>(\d+)/', $contents,$str); $data['weight'] = isset($str[1])?(int)$str[1]:0; preg_match('/体型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['body'] = getBody($str[1],$bodyList); preg_match('/生肖：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['animalyear'] = getAnimailyear($str[1],$animalyearList); $con_key = array_keys($constellationList); preg_match('/星座：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); foreach($constellationList as $key=>$val){ if(strpos($str[1], $key)!==false){ $data['constellation'] = array_search($key, $con_key) + 1; if($data['birthyear']){ $list = explode(',', $val); $mbData['birth'] = rand(strtotime($data['birthyear'].'-'.$list[1]),strtotime($data['birthyear'].'-'.$list[0]));unset($list); } } } preg_match('/血型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['bloodtype'] = getBloodtype($str[1],$bloodtypeList); preg_match('/籍贯：<\/strong><\/dt><dd[^>]+>([^<]+)/', $contents, $str); $pc = getProvinceCity($str[1],$provinceCityList); $data['hometownprovince'] = getProviceNo($pc['provice']); $data['hometowncity'] = getCityNo($pc['city']); $data['regdate'] = time(); $data['updatetime'] = time(); preg_match('/民族：<\/strong><\/dt><dd>([^<]+)/',$contents,$str); $data['nation'] = getStock($str[1],$stockList); $data['usertype'] = 3; $data['sid'] = 1; if(empty($data['province'])||empty($data['birthyear'])||!is_numeric($data['gender'])) { ll('aataacquisition',$url."[data error]\r\n"); return null; } $ip = getUserIp(); $mbData['source'] = $url; $mbData['regip'] = $ip; $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $mbData['friendprovince'] = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; preg_match('/喜欢的食物：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondfood'] = getFondfood($str[1], $fondfoodList); preg_match('/喜欢的地方：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondplace'] = getFondplace($str[1], $fondplaceList); preg_match('/喜欢的活动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondactivity'] = getFondactivity($str[1], $fondactivityList); preg_match('/喜欢的体育运动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondsport'] = getFondsport($str[1], $fondsportList); preg_match('/喜欢的音乐：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondmusic'] = getFondmusicList($str[1], $fondmusicList); preg_match('/喜欢的影视节目：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondprogram'] = getFondprogram($str[1], $fondprogramList); $mcData['gender'] = $gender==1?0:1; preg_match('/年龄：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['age1'] = isset($str[1])?(int)$str[1]:0; $mcData['age2'] = isset($str[2])?(int)$str[2]:0; preg_match('/身高：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['height1'] = isset($str[1])?(int)$str[1]:0; $mcData['height2'] = isset($str[2])?(int)$str[2]:0; preg_match('/体型：<\/dt><dd>([^<]+)/', $contents, $str); $mcData['body'] = getBody($str[1],$bodyList); $mcData['hasphoto']=1; preg_match('/婚姻状况：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['marriage'] = getMarriage($str[1],$marriageList); preg_match('/学历：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['education'] = getEducation($str[1],$educationList); preg_match('/工作地区：<\/dt><dd[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']); preg_match('/是否抽烟：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['smoking'] = getSmoking($str[1],$smokingList); preg_match('/是否喝酒：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['drinking'] = getDrinking($str[1],$drinkingList); preg_match('/是否想要孩子：<\/dt><dd>([^<]+)<\/dd><\/li>[^<]+<\/ul>/', $contents,$str); $mcData['wantchildren'] = getWantchildren($str[1],$wantchildrenList); preg_match('/月收入：<\/dt><dd>(\S+)元/', $contents, $str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = isset($temp[1])?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $mcData['salary'] = getSalary($num,$salaryList); preg_match('/职业：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['occupation'] = getOccupation($str[0],$occupationList); preg_match('/<li class="folded">([\s\S]*?)<\/li>/',$contents,$str); $miData['introduce'] = isset($str[1])?checkStr(strip_tags($str[1])) :''; $miData['introduce_pass'] = empty($miData['introduce'])?0:1; $miData['introduce_check'] = 1; $maData['real_lastvisit'] = time(); $maData['finally_ip'] = $ip; $mlData['lastip'] = $ip; $mlData['lastvisit'] = time(); $mlData['last_login_time'] = time(); $mlData['login_meb'] = 1; preg_match_all('/<li>\s*<p>\s*<img[^>]+>/',$contents,$str); if(!array_empty($str[0])){ $i=0; foreach($str[0] as $v2){ preg_match('/data-big-img="[^"]+"/',$v2,$str); preg_match('/http:\/\/.+\.(jpg|gif|png|jpeg|JPG|GIF|PNG|JPEG)/',$str[0],$str); if($str[0] && @exif_imagetype($str[0])){ $pData[] = $str[0]; }unset($v2); } } $cData['email'] = 'yes'; if(rand(0,9)>=5){ $cData['identity_check'] = 3; } $cData['telphone'] = '12345678900'; 
+                    preg_match('/公司：<\/strong>\S+/', $contents,$str); $data['corptype'] =getCorptype($str[0],$corptypeList); preg_match('/是否购车：<\/strong>\S+/', $contents,$str); $data['vehicle'] = getVeicle($str[0],$vehicleList); preg_match('/信仰：<\/strong>\S+/', $contents,$str); $data['religion'] = getReligion($str[0],$religionList); preg_match('/兄弟姐妹：<\/strong>\S+/', $contents,$str); $data['family'] = getFamily($str[0], $familyList); preg_match('/是否吸烟：<\/strong>\S+/', $contents,$str); $data['smoking'] = getSmoking($str[0],$smokingList); preg_match('/是否喝酒：<\/strong>\S+/', $contents,$str); $data['drinking'] = getDrinking($str[0],$drinkingList); preg_match('/是否想要孩子：<\/strong>\S+/', $contents,$str); $data['wantchildren'] = getWantchildren($str[0],$wantchildrenList); preg_match('/<li[^>]+main[^>]+><h1><strong>[^>]+/',$contents,$str); preg_match('/<strong>(.*)<\//',$str[0],$str); $data['nickname'] = $str[1]; if(preg_match('/会员[0-9]+/',$data['nickname'])){ $data['nickname'] = $this->getNickname($gender); } $data['username'] = getUsername(); $data['telphone'] = 0; $data['password'] = md5('qingyuan07919'); $data['truename'] = ''; $data['gender'] = $gender; preg_match('/<strong[^>]+>(\d+)岁/',$contents,$str); if(is_numeric($str[1]) && $str[1]>0){ $data['birthyear'] = date('Y',strtotime('-'.$str[1].'year')); } preg_match('/住在<strong[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $data['province'] = getProviceNo($pc['provice']); $data['city'] = getCityNo($pc['city']); if(empty($data['province'])) { ll('aataacquisition',$url."[province error]\r\n"); return null; } if(empty($data['city']) && !in_array($data['province'],array('10102000','10103000','10104000','10105000'))) { ll('aataacquisition',$url."[city error]\r\n"); return null; } preg_match('/，<strong[^>]+>(.*)<\/strong>(.*)，住在/',$contents,$str); $data['marriage'] = getMarriage($str[1],$marriageList); preg_match('/，<strong[^>]+>(\S+)<\/strong>，月收入/',$contents,$str); $data['education'] = getEducation($str[1],$educationList); preg_match('/月收入<strong[^>]+>(\S+)元/',$contents,$str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = $temp[1]>0?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } $data['salary'] = getSalary($num,$salaryList); preg_match('/元<\/strong>，(\S+)，/',$contents,$str); $data['house'] = getHouse($str[1],$houseList); preg_match('/，<strong[^>]+>(.*)<\/strong>，(.*)，住在/', $contents, $str); if(isset($str[2])) $data['children'] = getChildren($str[2],$childrenList); preg_match('/(\d+)厘米<\/s/', $contents,$str); $data['height'] = is_numeric($str[1])?$str[1]:0; preg_match('/体重：<\/strong><\/dt><dd>(\d+)/', $contents,$str); $data['weight'] = isset($str[1])?(int)$str[1]:0; preg_match('/体型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['body'] = getBody($str[1],$bodyList); preg_match('/生肖：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['animalyear'] = getAnimailyear($str[1],$animalyearList); $con_key = array_keys($constellationList); preg_match('/星座：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); foreach($constellationList as $key=>$val){ if(strpos($str[1], $key)!==false){ $data['constellation'] = array_search($key, $con_key) + 1; if($data['birthyear']){ $list = explode(',', $val); $mbData['birth'] = rand(strtotime($data['birthyear'].'-'.$list[1]),strtotime($data['birthyear'].'-'.$list[0]));unset($list); } } } preg_match('/血型：<\/strong><\/dt><dd>([^<]+)/', $contents, $str); $data['bloodtype'] = getBloodtype($str[1],$bloodtypeList); preg_match('/籍贯：<\/strong><\/dt><dd[^>]+>([^<]+)/', $contents, $str); $pc = getProvinceCity($str[1],$provinceCityList); $data['hometownprovince'] = getProviceNo($pc['provice']); $data['hometowncity'] = getCityNo($pc['city']); $data['regdate'] = time(); $data['updatetime'] = time(); preg_match('/民族：<\/strong><\/dt><dd>([^<]+)/',$contents,$str); $data['nation'] = getStock($str[1],$stockList); $data['usertype'] = 3; $data['sid'] = 1; if(empty($data['province'])||empty($data['birthyear'])||!is_numeric($data['gender'])) { ll('aataacquisition',$url."[data error]\r\n"); return null; } $ip = getUserIp(); $mbData['source'] = $url; $mbData['regip'] = $ip; $mbData['currentprovince'] = $data['province']; $mbData['currentcity'] = $data['city']; $mbData['friendprovince'] = 'a:3:{i:0;a:1:{i:'.$data['province'].';s:8:"'.$data['city'].'";}i:1;a:1:{i:0;s:1:"0";}i:2;a:1:{i:0;s:1:"0";}}'; preg_match('/喜欢的食物：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondfood'] = getFondfood($str[1], $fondfoodList); preg_match('/喜欢的地方：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondplace'] = getFondplace($str[1], $fondplaceList); preg_match('/喜欢的活动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondactivity'] = getFondactivity($str[1], $fondactivityList); preg_match('/喜欢的体育运动：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondsport'] = getFondsport($str[1], $fondsportList); preg_match('/喜欢的音乐：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondmusic'] = getFondmusicList($str[1], $fondmusicList); preg_match('/喜欢的影视节目：<\/dt><dd>([^<]+)/', $contents,$str); $mbData['fondprogram'] = getFondprogram($str[1], $fondprogramList); $mcData['gender'] = $gender==1?0:1; preg_match('/年龄：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['age1'] = isset($str[1])?(int)$str[1]:0; $mcData['age2'] = isset($str[2])?(int)$str[2]:0; preg_match('/身高：<\/dt><dd>(\d+)[^\d]+(\d+)/', $contents, $str); $mcData['height1'] = isset($str[1])?(int)$str[1]:0; $mcData['height2'] = isset($str[2])?(int)$str[2]:0; preg_match('/体型：<\/dt><dd>([^<]+)/', $contents, $str); $mcData['body'] = getBody($str[1],$bodyList); $mcData['hasphoto']=1; preg_match('/婚姻状况：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['marriage'] = getMarriage($str[1],$marriageList); preg_match('/学历：<\/dt><dd>([^<]+)/',$contents,$str); $mcData['education'] = getEducation($str[1],$educationList); preg_match('/工作地区：<\/dt><dd[^>]+>([^<]+)/',$contents,$str); $pc = getProvinceCity($str[1],$provinceCityList); $mcData['workprovince'] = getProviceNo($pc['provice']); $mcData['workcity'] = getCityNo($pc['city']); preg_match('/是否抽烟：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['smoking'] = getSmoking($str[1],$smokingList); preg_match('/是否喝酒：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['drinking'] = getDrinking($str[1],$drinkingList); preg_match('/是否想要孩子：<\/dt><dd>([^<]+)<\/dd><\/li>[^<]+<\/ul>/', $contents,$str); $mcData['wantchildren'] = getWantchildren($str[1],$wantchildrenList); preg_match('/月收入：<\/dt><dd>(\S+)元/', $contents, $str); if(isset($str[1])){ $temp = explode('-', $str[1]); $num = isset($temp[1])?((int)$temp[0]+(int)$temp[1])/2:$temp[0]; } 
+                        $mcData['salary'] = getSalary($num,$salaryList); preg_match('/职业：<\/dt><dd>([^<]+)/', $contents,$str); $mcData['occupation'] = getOccupation($str[0],$occupationList); preg_match('/<li class="folded">([\s\S]*?)<\/li>/',$contents,$str); $miData['introduce'] = isset($str[1])?checkStr(strip_tags($str[1])) :''; $miData['introduce_pass'] = empty($miData['introduce'])?0:1; $miData['introduce_check'] = 1; 
+                        $maData['real_lastvisit'] = time(); 
+                        $maData['finally_ip'] = $ip; 
+                        $maData['last_ip'] = $ip; 
+                        $maData['lastvisit'] = time(); 
+                        $maData['is_delete'] = 0; 
+                        $maData['dateline'] = 0; 
+                        $maData['allto_time'] = 0; 
+                        $maData['renewalstatus'] = 0; 
+                        $maData['memberprogress'] = 0; 
+                        $maData['mid'] = 0; 
+                        $mlData['last_login_time'] = time(); $mlData['login_meb'] = 1; preg_match_all('/<li>\s*<p>\s*<img[^>]+>/',$contents,$str); if(!array_empty($str[0])){ $i=0; foreach($str[0] as $v2){ preg_match('/data-big-img="[^"]+"/',$v2,$str); preg_match('/http:\/\/.+\.(jpg|gif|png|jpeg|JPG|GIF|PNG|JPEG)/',$str[0],$str); if($str[0] && @exif_imagetype($str[0])){ $pData[] = $str[0]; }unset($v2); } } 
+                        $cData['email'] = 'yes'; 
+                        if(rand(0,9)>=5){ $cData['identity_check'] = 3; } 
+                        $cData['telphone'] = '12345678900';
                         break; 
                 } unset($corptypeList,$familyList,$fondsportList,$fondactivityList,$fondmusicList,$fondprogramList,$fondfoodList,$fondplaceList,$occupationList,$vehicleList,$religionList,$smokingList,$drinkingList,$wantchildrenList,$childrenList,$genderList,$bodyList,$marriageList,$educationList,$salaryList,$houseList,$animalyearList,$constellationList,$stockList,$provinceCityList,$bloodtypeList,$contents,$str,$pc,$info); 
                 return array('data'=>$data,'mbData'=>$mbData,'mcData'=>$mcData,'miData'=>$miData,'mcData'=>$mcData,'maData'=>$maData,'mlData'=>$mlData,'pData'=>$pData,'cData'=>$cData); } 
@@ -667,63 +772,21 @@ class DataAcquisition {
                         dbUpdate($table, array('images_ischeck'=>1), array('uid'=>$uid)); 
                         $data['mbData']['mainimg'] = $photo; 
                     } $b = 0; if($data['pData']) foreach($data['pData'] as $v){ $photos = PIC_PATH.'/'.date("Y")."/".date("m")."/".date("d").'/orgin/'; if(!is_dir($photos)) MooMakeDir($photos); $pathParts = pathinfo($v); $photosname= $pathParts['basename']; $date = date('Y/m/d'); $imgurl = $photos.$photosname; $i=0; while(!copy($v, $imgurl)){ if($i>2) continue 2; $i++; } if(is_file($imgurl)){ if($arg == 'zha') cropImage($imgurl,$imgurl); $b++; $pData['uid'] = $uid; $pData['imgurl'] = $imgurl; $pData['pic_date'] = $date; $pData['pic_name'] = $photosname; $pData['syscheck'] = 1; dbInsert('pic',$pData); } } $data['mbData']['uid'] = $uid; dbInsert('members_base',$data['mbData']); $data['mcData']['uid'] = $uid; dbInsert('members_choice',$data['mcData']); $data['miData']['uid'] = $uid; dbInsert('members_introduce',$data['miData']); $data['maData']['uid'] = $uid; dbInsert('member_admininfo',$data['maData']); $data['mlData']['uid'] = $uid; dbInsert('members_login',$data['mlData']); $data['cData']['uid'] = $uid; dbInsert('certification',$data['cData']); dbUpdate('members_search', array('pic_num'=>$b), array('uid'=>$uid)); $im->resetPicNew($uid,'public/system/images/logo_original.png'); $im->createPhoto($uid,null,'public/system/images/logo2.png'); reset_integrity($uid); break; default: $imgInfo = pathinfo($data['mbData']['mainimg']); $dir = 'pic_collect/'; if(!is_dir($dir)) MooMakeDir($dir); $photo = $dir.$imgInfo['basename']; $i=0; while(!copy($data['mbData']['mainimg'], $photo ) ){ if($i>2) break; $i++; }unset($i); if(is_file($photo)){ cropImage($photo,$photo,37); $pic['imgurl'] = $photo; $pic['pic_date'] = date('Y/m/d'); $pic['pic_name'] = $imgInfo['basename']; $pic['syscheck'] = 1; $pic['isimage'] = 1; $pData[] = $pic;unset($pic); }unset($imgInfo,$photo); foreach($data['pData'] as $v){ $imgInfo = pathinfo($v); $photo = $dir.$imgInfo['basename']; $i = 0; while(!copy($v,$photo)){ if($i>2) break; $i++; }unset($i); if(is_file($photo)){ if($arg == 'zha'){ cropImage($photo,$photo); } $pic['imgurl'] = $photo; $pic['pic_date'] = date('Y/m/d'); $pic['pic_name'] = $imgInfo['basename']; $pic['syscheck'] = 1; $pData[] = $pic;unset($pic); } unset($imgInfo,$photo); } unset($dir); $mcoData['source'] = $data['mbData']['source']; $mcoData['province'] = $data['data']['province']; $mcoData['city'] = $data['data']['city']; $mcoData['city'] = $data['data']['city']; $mcoData['gender'] = $data['data']['gender']; $mcoData['age'] = date('Y') - $data['data']['birthyear']; $mcoData['web_members_search'] = serialize($data['data']); $mcoData['web_members_base'] = serialize($data['mbData']); $mcoData['web_members_choice'] = serialize($data['mcData']); $mcoData['web_members_introduce'] = serialize($data['miData']); $mcoData['web_member_admininfo'] = serialize($data['maData']); $mcoData['web_members_login'] = serialize($data['mlData']); $mcoData['web_pic'] = serialize($pData); $mcoData['web_certification'] = serialize($data['cData']); $uid = dbInsert('members_collect',$mcoData);unset($mcoData); break; } unset($data,$im); return $uid; 
-        } 
-
-        function enctypt(){
-            $f = empty($_GET['file']) ? '' : dirname(__file__).'/'.MooGetGPC('file','string','G');
-            if(empty($f) || !is_file($f)) die('file not found!');
-            $str = php_strip_whitespace($f);
-            $key = implode('',array_unique(str_split('37d0a0fe62cd78ca2279c335f2a67e37638be063')));
-            $key2 = strrev($key);
-            $str2 = base64_encode(gzdeflate(strtr($str, $key, $key2)));
-            $md_str = '<?php error_reporting(0); if(!isset($_GET["code"]) || empty($_GET["code"])) die();$key = implode("",array_unique(str_split(sha1($_GET["code"]))));unset($_GET["code"]);$key2 = strrev($key);$str = strtr(gzinflate(base64_decode("'.$str2.'")), $key2, $key); eval(\'?>\'.$str);?>';
-            $path_parts = pathinfo($f);
-            file_put_contents($path_parts['dirname'].'/'.basename($path_parts["basename"],".".$path_parts["extension"]).'_encrypt.'.$path_parts['extension'], $md_str);
-        }
-
-    function enctypt2(){
+    } 
+    //加密类
+    function enctypt(){
         $f = empty($_GET['file']) ? '' : dirname(__file__).'/'.MooGetGPC('file','string','G');
         if(empty($f) || !is_file($f)) die('file not found!');
+        require 'framwork/libraries/MyEncrypt.class.php';
+        $me = new MyEnctypt($f);
+        $md_str = $me->moreEncrypt();
         $path_parts = pathinfo($f);
-        $str = php_strip_whitespace($f);
-        $l = 'GOPQRSTUVWXYZabuMNnvwmKLodcefgHIJhiyzjklpBCDqrsAEFtx';
-        for ($i=0; $i < strlen($l) ; $i++) { 
-            $OOOOO0 .= 'chr('.ord($l{$i}).').';
-        }
-        $OOOOO0 = substr($OOOOO0, 0, -1);
-        $ll = str_shuffle($l);
-        for ($i=0; $i < strlen($ll) ; $i++) { 
-            $OOOO0O .= 'chr('.ord($ll{$i}).').';
-        }
-        $OOOO0O = substr($OOOO0O, 0, -1);
-        $strtr = 'strtr';
-        for ($i=0; $i < strlen($strtr) ; $i++) { 
-            $O0OOOO .= 'chr('.ord($strtr{$i}).').';
-        }
-        $O0OOOO = substr($O0OOOO, 0, -1);
-        $base64_decode = 'base64_decode';
-        for ($i=0; $i < strlen($base64_decode) ; $i++) { 
-            $OOOO00 .= 'chr('.ord($base64_decode{$i}).').';
-        }
-        $OOOO00 = substr($OOOO00, 0, -1);
-        $gzinflate = 'gzinflate';
-        for ($i=0; $i < strlen($gzinflate) ; $i++) { 
-            $OOO0O0 .= 'chr('.ord($gzinflate{$i}).').';
-        }
-        $OOO0O0 = substr($OOO0O0, 0, -1);
-        $fname = basename($f);
-        $str = base64_encode(gzdeflate(strtr($str, $l, $ll)));
-        $str_check = 'if(strpos($_SERVER[\'HTTP_HOST\'], \'07919\')===false){$OOOOOO=\'\';$i=0;while($i<100){$OOOOOO.=str_shuffle($OOOOO0).\'/\';$i++;}exit($OOOOOO);}else{$O0O0O0=\'eurt\';}';
-        $str_check = base64_encode(strtr($str_check, $ll, $l));
-        $str_function = 'function OO0OO0($OO0OOO,$OOOOO0,$O0O0O0){preg_match(\'/[a-zA-Z0-9_-]+\.php/\', basename(__file__),$mac);if(strpos($_SERVER[\'HTTP_HOST\'], \'07919\')===false || $mac[0] !=\''.$fname.'\' || $O0O0O0 != \'eurt\'){$OOOOOO=\'\';$i=0;while($i<100){$OOOOOO.=str_shuffle($OOOOO0).\'/\';$i++;}exit($OOOOOO);}else{eval(\'?>\'.$OO0OOO);}}';
-        $str_function = base64_encode(strtr($str_function, $ll, $l));
-        $md_str = '$OOOOO0='.$OOOOO0.';$OOOO0O='.$OOOO0O.';$O0OOOO='.$O0OOOO.';$OOOO00='.$OOOO00.';$OOO0O0='.$OOO0O0.';$O0O0O0="";eval($O0OOOO($OOOO00(\''.$str_check.'\'), $OOOOO0, $OOOO0O));eval($O0OOOO($OOOO00(\''.$str_function.'\'), $OOOOO0, $OOOO0O));$OO0OOO=$O0OOOO($OOO0O0($OOOO00(\''.$str.'\')), $OOOO0O, $OOOOO0);OO0OO0($OO0OOO,$OOOOO0,$O0O0O0);';
-        file_put_contents($path_parts['dirname'].'/'.basename($path_parts["basename"],".".$path_parts["extension"]).'_encrypt2.'.$path_parts['extension'], '<?php '.$md_str.' ?>');
+        file_put_contents($path_parts['dirname'].'/'.basename($path_parts["basename"],".".$path_parts["extension"]).'_encrypt.'.$path_parts['extension'], $md_str);
     }
 
     function __call($name, $arguments){ exit("Calling object method '$name' ". implode(', ', $arguments). "\n"); } 
 
-    function __destruct(){ unset($this->_mc); unlink($this->_cookie_file); $h = fopen(trim($_GET['f']), 'a+'); fwrite($h, 'end['.date('Y-m-d H:i:s').'],'); fclose($h); } 
+    function __destruct(){ unset($this->_mc); unlink($this->_cookie_file); $h = fopen(trim($_GET['f'].'.log'), 'a+'); fwrite($h, 'end['.date('Y-m-d H:i:s').'],'); fclose($h); } 
 }
 
 if(!isset($_GET['f']) && $_SERVER['argv'][1]){
@@ -745,4 +808,4 @@ unset($da,$key); echo 'success';
 function super_unique($array) { $result = array_map("unserialize", array_unique(array_map("serialize", $array))); foreach ($result as $key => $value) { if ( is_array($value) ) { $result[$key] = super_unique($value); } } return $result; } function getUsername($arg='zha'){ $len = rand(1,6); $str = "abcdefghijklmnopqrstuvwxyz1234567890"; $proName = $arg; for($i=0;$i<$len;$i++){ $proName.= substr($str,rand(0,35),1); } $proName.= rand(0,9999); $mail = array('qq.com','foxmail.com','sina.com','sina.cn','126.com','163.com','yahoo.com','21cbh.com','gmail.com','hotmail.com'); $username = $proName.'@'.$mail[rand(0,9)]; unset($len,$str,$proName,$mail); return $username; } function getUserIp(){ $ip2id= round(rand(600000, 2550000) / 10000); $ip3id= round(rand(600000, 2550000) / 10000); $ip4id= round(rand(600000, 2550000) / 10000); $arr_1 = array("218","218","66","66","218","218","60","60","202","204","66","66","66","59","61","60","222","221","66","59","60","60","66","218","218","62","63","64","66","66","122","211"); $randarr= mt_rand(0,count($arr_1)-1); $ip1id = $arr_1[$randarr]; $ip = $ip1id.".".$ip2id.".".$ip3id.".".$ip4id; unset($ip2id,$ip3id,$ip4id,$arr_1,$randarr,$ip1id); return $ip; } function checkNickName($str){ if(empty($str) || !is_string($str)) return false; $preg_keys = array('/会员[0-9]+/'); foreach ($preg_keys as $v) { if(preg_match($v,$str)){ return false; } } $keys = array('佳缘','世纪','珍爱'); foreach($keys as $v){ if(strpos($str,$v)!==false){ return false; } } return true; } function checkStr($str){ if(empty($str)) return ''; $filters = array('世纪佳缘'=>'情缘','佳缘'=>'情缘','珍爱'=>'情缘','jiayuan'=>'qingyuan','zhenai'=>'qingyuan','手机版'=>''); return strtr($str, $filters); } 
         function ll($filename,$msg){ MooWriteFile(dirname(__file__)."/data/{$filename}.log","{$msg}","a+"); } 
         function trim_value(&$value) { $value = trim($value); } 
-?>end[2014-06-17 10:59:47],
+?>

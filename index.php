@@ -1,22 +1,32 @@
 <?php
-/*  
-    Copyright (c) 2009 
-
-    $Id: index.php 399 2009-10-14 07:11:04Z techice $
-
-	header("Expires: Mon, 26 Jul 1970 05:00:00  GMT");  
-	header("Cache-Control:no-cache, must-revalidate");  
-	header("Pragma:no-cache");  */
+/**
+ * [handleFatalPhpError 错误记录]
+ * @return [type] [description]
+ */
+function handleFatalPhpError(){
+    $info = error_get_last();
+    if($info['type'] == E_ERROR || $info['type'] ==  E_USER_ERROR){
+        $str = date('Y-m-d H:i:s')."\t".$_SERVER['REQUEST_URI']."\t";
+        foreach ($info as $k => $v) {
+            $str .= '['.$k.']=>'.$v.' ';
+        }
+        $str .= "\r\n";
+        $handle = fopen(dirname(__file__).'/data/logs/www_errorlogs_'.date('ymd').'.txt', 'a+');
+        fwrite($handle, $str);
+        fclose($handle);
+    }
+}
+register_shutdown_function('handleFatalPhpError');
 $name = isset($_GET['n']) ? $_GET['n'] : 'index';
 $_GET['h'] = isset($_GET['h']) ? $_GET['h'] : '';
 
-if($_SERVER['HTTP_HOST'] == 'www.07919.dev')
+if(isset($_SERVER['HTTP_HOST']) && substr($_SERVER['HTTP_HOST'], -3) != 'com')
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 else
     error_reporting(0);
 
 //360防护脚本
-if(is_file($_SERVER['DOCUMENT_ROOT'].'/framwork/plugins/360webscan.php') && $_SERVER['HTTP_HOST'] !='www.07919.dev'){
+if(isset($_SERVER['HTTP_HOST']) && substr($_SERVER['HTTP_HOST'], -3) == 'com'){
     require_once($_SERVER['DOCUMENT_ROOT'].'/framwork/plugins/360webscan.php');
 }
 
@@ -29,7 +39,6 @@ defined('MOOPHP_COOKIE_DOMAIN') && MOOPHP_COOKIE_DOMAIN && ini_set('session.cook
 define("FROMEWORK",false);
 
 //note 加载框架
-
 require 'framwork/MooPHP.php';
 
 
@@ -49,8 +58,6 @@ MooUserInfo();
 $user_arr=$user=UserInfo();
 
 $uid = $userid =$MooUid;
-
-MooWebLogs(true,true);
 
 //模块判断
 if( !in_array($name, $names) ){
@@ -81,6 +88,14 @@ if($uid){
     $sql = "select id from {$dbTablePre}payment_new where status = 1 and pay_type = 2 and pay_service = 1 and uid = {$uid}";
     $h_pay = $_MooClass['MooMySQL']->getOne($sql,true);
 }
+/**
+ * [MyAutoload 类库注册]
+ * @param [type] $className [description]
+ */
+function MyAutoload($className){
+    include './framwork/Include/'.$className.'.class.php';
+}
+spl_autoload_register('MyAutoload');
 //获取皮肤名称
 $style_uid = MooGetGPC('uid', 'integer', 'G');
 $skiname = MooGetGPC('skiname','string','G');
@@ -97,7 +112,7 @@ if( !empty($style_uid) && $style_uid != $uid ){ //采用他人的样式
 $style_name = 'default';
 include_once("module/".strtolower($name)."/index.php");
 
-//$_MooClass['MooMySQL']->close();
+$_MooClass['MooMySQL']->close();
 
 @ $memcached->close();
 @ $fastdb->close();
